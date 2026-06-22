@@ -1,0 +1,142 @@
+import tensorflow as tf
+from tensorflow.keras import datasets, layers, models
+
+# ==========================
+# LOAD CIFAR10 DATASET
+# ==========================
+
+(x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
+
+print("Train shape:", x_train.shape)
+print("Test shape:", x_test.shape)
+
+# ==========================
+# NORMALIZATION
+# ==========================
+
+x_train = x_train.astype("float32") / 255.0
+x_test = x_test.astype("float32") / 255.0
+
+# ==========================
+# ONE HOT ENCODING
+# ==========================
+
+y_train = tf.keras.utils.to_categorical(y_train, 10)
+y_test = tf.keras.utils.to_categorical(y_test, 10)
+
+# ==========================
+# BUILD CNN MODEL
+# ==========================
+
+model = models.Sequential()
+
+# Layer 1
+model.add(
+    layers.Conv2D(
+        32,
+        (3, 3),
+        activation='relu',
+        padding='same',
+        input_shape=(32, 32, 3)
+    )
+)
+
+model.add(
+    layers.MaxPooling2D(
+        pool_size=(2, 2)
+    )
+)
+
+# Layer 2
+model.add(
+    layers.Conv2D(
+        64,
+        (3, 3),
+        activation='relu',
+        padding='same'
+    )
+)
+
+model.add(
+    layers.MaxPooling2D(
+        pool_size=(2, 2)
+    )
+)
+
+# Layer 3
+model.add(
+    layers.Conv2D(
+        64,
+        (3, 3),
+        activation='relu',
+        padding='same'
+    )
+)
+
+# Flatten
+model.add(
+    layers.Flatten()
+)
+
+# Dense
+model.add(
+    layers.Dense(
+        64,
+        activation='relu'
+    )
+)
+
+# Output
+model.add(
+    layers.Dense(
+        10,
+        activation='softmax'
+    )
+)
+
+# ==========================
+# MODEL SUMMARY
+# ==========================
+
+model.summary()
+
+# ==========================
+# COMPILE
+# ==========================
+
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+# ==========================
+# TRAIN
+# ==========================
+
+history = model.fit(
+    x_train,
+    y_train,
+    epochs=10,
+    batch_size=64,
+    validation_split=0.2
+)
+
+# ==========================
+# EVALUATE
+# ==========================
+
+loss, accuracy = model.evaluate(
+    x_test,
+    y_test
+)
+
+print("\nTest Accuracy =", accuracy)
+
+# ==========================
+# SAVE MODEL
+# ==========================
+
+model.save("cnn_cifar10.keras")
+
+print("\nModel saved successfully!")
