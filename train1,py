@@ -1,142 +1,410 @@
+# =====================================================
+# CNN IMAGE CLASSIFICATION - CIFAR10
+# Tác dụng:
+# Huấn luyện mạng CNN để phân loại ảnh thành 10 lớp:
+#
+# 0 = airplane
+# 1 = automobile
+# 2 = bird
+# 3 = cat
+# 4 = deer
+# 5 = dog
+# 6 = frog
+# 7 = horse
+# 8 = ship
+# 9 = truck
+# =====================================================
+
+# TensorFlow là thư viện Deep Learning
 import tensorflow as tf
+
+# datasets : tải dữ liệu có sẵn
+# layers   : các lớp của mạng CNN
+# models   : xây dựng mô hình
 from tensorflow.keras import datasets, layers, models
 
-# ==========================
-# LOAD CIFAR10 DATASET
-# ==========================
+
+# =====================================================
+# BƯỚC 1: TẢI BỘ DỮ LIỆU CIFAR10
+# =====================================================
+
+# x_train : ảnh dùng để huấn luyện
+# y_train : nhãn tương ứng
+
+# x_test : ảnh dùng để kiểm tra
+# y_test : nhãn tương ứng
 
 (x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
+
+# Hiển thị kích thước dữ liệu
 
 print("Train shape:", x_train.shape)
 print("Test shape:", x_test.shape)
 
-# ==========================
-# NORMALIZATION
-# ==========================
+# Kết quả:
+
+# Train shape: (50000, 32, 32, 3)
+# Test shape : (10000, 32, 32, 3)
+
+# Ý nghĩa:
+#
+# 50000 ảnh train
+# 10000 ảnh test
+#
+# Mỗi ảnh:
+# 32 pixel chiều cao
+# 32 pixel chiều rộng
+# 3 kênh màu RGB
+
+
+# =====================================================
+# BƯỚC 2: CHUẨN HÓA DỮ LIỆU
+# =====================================================
+
+# Pixel ảnh có giá trị:
+#
+# 0 → 255
+#
+# CNN học tốt hơn khi dữ liệu nằm trong khoảng:
+#
+# 0 → 1
 
 x_train = x_train.astype("float32") / 255.0
 x_test = x_test.astype("float32") / 255.0
 
-# ==========================
-# ONE HOT ENCODING
-# ==========================
+# Ví dụ:
+#
+# 128 / 255 = 0.502
+#
+# Sau bước này tất cả pixel đều nằm trong [0,1]
+
+
+# =====================================================
+# BƯỚC 3: ONE-HOT ENCODING
+# =====================================================
+
+# Nhãn ban đầu:
+#
+# cat = 3
+#
+# chuyển thành:
+#
+# [0 0 0 1 0 0 0 0 0 0]
 
 y_train = tf.keras.utils.to_categorical(y_train, 10)
 y_test = tf.keras.utils.to_categorical(y_test, 10)
 
-# ==========================
-# BUILD CNN MODEL
-# ==========================
+# 10 là số lớp trong CIFAR10
+
+
+# =====================================================
+# BƯỚC 4: TẠO MÔ HÌNH CNN
+# =====================================================
+
+# Sequential:
+#
+# Các layer được xếp liên tiếp nhau
 
 model = models.Sequential()
 
-# Layer 1
+
+# =====================================================
+# CONVOLUTION LAYER 1
+# =====================================================
+
 model.add(
+
     layers.Conv2D(
+
+        # 32 bộ lọc (32 filters)
         32,
+
+        # kích thước kernel 3x3
         (3, 3),
+
+        # hàm kích hoạt ReLU
         activation='relu',
+
+        # giữ nguyên kích thước ảnh
         padding='same',
+
+        # ảnh đầu vào
         input_shape=(32, 32, 3)
     )
 )
 
+# Sau layer này CNN học:
+#
+# - cạnh
+# - góc
+# - đường thẳng
+
+
+# =====================================================
+# MAX POOLING 1
+# =====================================================
+
 model.add(
+
     layers.MaxPooling2D(
+
+        # cửa sổ pooling 2x2
         pool_size=(2, 2)
     )
 )
 
-# Layer 2
+# Giảm kích thước:
+#
+# 32x32
+# ↓
+# 16x16
+
+# Giảm số phép tính
+# Giữ đặc trưng quan trọng
+
+
+# =====================================================
+# CONVOLUTION LAYER 2
+# =====================================================
+
 model.add(
+
     layers.Conv2D(
+
+        # tăng số filter
         64,
+
         (3, 3),
+
         activation='relu',
+
         padding='same'
     )
 )
 
+# CNN bắt đầu học:
+#
+# - mắt
+# - tai
+# - bánh xe
+# - cánh máy bay
+
+
+# =====================================================
+# MAX POOLING 2
+# =====================================================
+
 model.add(
+
     layers.MaxPooling2D(
+
         pool_size=(2, 2)
     )
 )
 
-# Layer 3
+# Kích thước:
+#
+# 16x16
+# ↓
+# 8x8
+
+
+# =====================================================
+# CONVOLUTION LAYER 3
+# =====================================================
+
 model.add(
+
     layers.Conv2D(
+
         64,
+
         (3, 3),
+
         activation='relu',
+
         padding='same'
     )
 )
 
-# Flatten
+# CNN học đặc trưng phức tạp:
+#
+# - đầu mèo
+# - mặt chó
+# - thân xe
+# - thân tàu
+
+
+# =====================================================
+# FLATTEN
+# =====================================================
+
 model.add(
+
     layers.Flatten()
 )
 
-# Dense
+# Chuyển tensor:
+#
+# 8 x 8 x 64
+#
+# thành vector:
+#
+# 4096 phần tử
+#
+# để đưa vào Dense Layer
+
+
+# =====================================================
+# FULLY CONNECTED LAYER
+# =====================================================
+
 model.add(
+
     layers.Dense(
+
+        # 64 neuron
         64,
+
         activation='relu'
     )
 )
 
-# Output
+# Nhiệm vụ:
+#
+# Kết hợp các đặc trưng CNN đã học
+
+
+# =====================================================
+# OUTPUT LAYER
+# =====================================================
+
 model.add(
+
     layers.Dense(
+
+        # 10 lớp
         10,
+
+        # Softmax xuất xác suất
         activation='softmax'
     )
 )
 
-# ==========================
-# MODEL SUMMARY
-# ==========================
+# Ví dụ:
+#
+# Airplane = 0.01
+# Cat      = 0.85
+# Dog      = 0.03
+#
+# => Dự đoán Cat
+
+
+# =====================================================
+# HIỂN THỊ KIẾN TRÚC MÔ HÌNH
+# =====================================================
 
 model.summary()
 
-# ==========================
-# COMPILE
-# ==========================
+# Hiển thị:
+#
+# Layer
+# Output Shape
+# Param #
+#
+# Tổng số tham số của CNN
+
+
+# =====================================================
+# COMPILE MODEL
+# =====================================================
 
 model.compile(
+
+    # Thuật toán tối ưu
     optimizer='adam',
+
+    # Hàm mất mát cho bài toán nhiều lớp
     loss='categorical_crossentropy',
+
+    # Đánh giá bằng accuracy
     metrics=['accuracy']
 )
 
-# ==========================
-# TRAIN
-# ==========================
+# Adam:
+# tự động cập nhật trọng số hiệu quả
+
+# CrossEntropy:
+# đo độ sai giữa nhãn thật và dự đoán
+
+
+# =====================================================
+# HUẤN LUYỆN MÔ HÌNH
+# =====================================================
 
 history = model.fit(
+
     x_train,
+
     y_train,
+
+    # học 10 vòng
     epochs=10,
+
+    # mỗi lần lấy 64 ảnh
     batch_size=64,
+
+    # 20% train dùng validation
     validation_split=0.2
 )
 
-# ==========================
-# EVALUATE
-# ==========================
+# Epoch:
+#
+# 1 epoch
+# = học hết toàn bộ 50000 ảnh 1 lần
+
+# 10 epoch
+# = học toàn bộ dữ liệu 10 lần
+
+
+# =====================================================
+# KIỂM TRA MÔ HÌNH
+# =====================================================
 
 loss, accuracy = model.evaluate(
+
     x_test,
+
     y_test
 )
 
 print("\nTest Accuracy =", accuracy)
 
-# ==========================
-# SAVE MODEL
-# ==========================
+# Ví dụ:
+#
+# Test Accuracy = 0.75
+#
+# Nghĩa là:
+#
+# Dự đoán đúng khoảng 75% ảnh test
+
+
+# =====================================================
+# LƯU MÔ HÌNH
+# =====================================================
 
 model.save("cnn_cifar10.keras")
 
 print("\nModel saved successfully!")
+
+# Tạo file:
+#
+# cnn_cifar10.keras
+#
+# File này chứa:
+#
+# - kiến trúc CNN
+# - trọng số đã học
+#
+# Sau này chỉ cần load model
+# mà không cần train lại.
