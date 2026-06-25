@@ -1,37 +1,39 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models
+from tensorflow.keras import layers, models, datasets
+import matplotlib.pyplot as plt
+import numpy as np
 
-# 1. Load dữ liệu (Tự động gán nhãn từ tên thư mục)
-train_ds = tf.keras.utils.image_dataset_from_directory(
-    '/content/drive/MyDrive/dataset/train', 
-    image_size=(150, 150), 
-    batch_size=32
-)
-val_ds = tf.keras.utils.image_dataset_from_directory(
-    '/content/drive/MyDrive/dataset/validation', 
-    image_size=(150, 150), 
-    batch_size=32
-)
+# 1. Tải và chuẩn hóa dữ liệu
+(x_train, y_train), (x_test, y_test) = datasets.cifar10.load_data()
+x_train, x_test = x_train / 255.0, x_test / 255.0 # Chuẩn hóa về [0, 1]
+num_classes = 10
+y_train = tf.keras.utils.to_categorical(y_train, num_classes)
+y_test = tf.keras.utils.to_categorical(y_test, num_classes)
 
 # 2. Xây dựng cấu trúc mạng CNN
 model = models.Sequential([
-    # Chuẩn hóa ảnh từ [0, 255] về [0, 1] để tính toán ổn định
-    layers.Rescaling(1./255, input_shape=(150, 150, 3)), 
-    # Tầng tích chập 1: Tìm đặc trưng cơ bản (cạnh, góc)
-    layers.Conv2D(32, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)), # Giảm kích thước ảnh
-    # Tầng tích chập 2: Tìm đặc trưng phức tạp (hình khối)
-    layers.Conv2D(64, (3, 3), activation='relu'),
-    layers.MaxPooling2D((2, 2)),
-    # Chuyển dữ liệu sang dạng vector để phân loại
+    layers.Conv2D(32, (3,3), activation='relu', padding='same', input_shape=(32,32,3)),
+    layers.MaxPooling2D(2,2),
+    layers.Conv2D(64, (3,3), activation='relu', padding='same'),
+    layers.MaxPooling2D(2,2),
+    layers.Conv2D(64, (3,3), activation='relu', padding='same'),
     layers.Flatten(),
     layers.Dense(64, activation='relu'),
-    # Lớp đầu ra (Sigmoid cho bài toán 2 lớp: chó/mèo)
-    layers.Dense(1, activation='sigmoid')
+    layers.Dense(num_classes, activation='softmax') # Đầu ra 10 lớp
 ])
 
-# 3. Biên dịch mô hình (Thiết lập thuật toán học)
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+# 3. Biên dịch mô hình
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-# 4. Huấn luyện (Cho máy học 5 vòng trên toàn bộ tập dữ liệu)
-model.fit(train_ds, epochs=5, validation_data=val_ds)
+# 4. Huấn luyện
+history = model.fit(x_train, y_train, epochs=15, batch_size=64, validation_split=0.2, verbose=2)
+
+# 5. Đánh giá và Vẽ đồ thị
+test_loss, test_acc = model.evaluate(x_test, y_test, verbose=0)
+print(f"Độ chính xác trên tập test: {test_acc:.3f}")
+
+plt.plot(history.history['accuracy'], label='train_acc')
+plt.plot(history.history['val_accuracy'], label='val_acc')
+plt.legend()
+plt.title('Accuracy qua các Epoch')
+plt.show()
